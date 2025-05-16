@@ -1,20 +1,50 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style/style.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- Bootstrap CSS -->
-    <title>Spoti'stat</title>
-  </head>
-  
-  <body>
-    <div>
-      <canvas id="myChart"></canvas>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spoti'stat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style/style.css">
+</head>
+<body>
+
+  <!-- En-tête -->
+  <header class="text-light text-center py-5">
+    <h1 class="display-3 fw-bold">Le mec a des goûts de roi ou quoi (C'est a moi les Playlist) ?</h1>
+    <p class="lead">Pourquoi met-on de la vanille dans les desserts ? !Spoil! Pour qu'il est du gousse (du goût)</p>
+  </header>
+
+  <!-- Contenu principal -->
+  <div class="container my-5">
+    <div class="row g-4">
+      <!-- Graphique artistes -->
+      <div class="col-md-6">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white">Top 10 des Artistes</div>
+          <div class="card-body">
+            <canvas id="artistChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphique genres -->
+      <div class="col-md-6">
+        <div class="card shadow">
+          <div class="card-header bg-success text-white">Distribution des Genres</div>
+          <div class="card-body">
+            <canvas id="genreChart"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
-    
-  </body>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script> <!-- Bootstrap JS -->
-  <script src="script/script.js"></script>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
 </html>
+

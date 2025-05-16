@@ -1,42 +1,49 @@
-const fs = require('fs');
-const path = require('path');
+fetch('chemin/vers/ton/fichier.json') // requête vers le fichier JSON
+  .then(response => response.json()) // convertir la réponse textuelle en JSON
+  .then(data => {
+    // traiter les données
+    console.log(data);
+  });
 
-// Chemin vers le fichier data.json
-const filePath = path.join(__dirname, 'data.json');
+// Graphique des artistes
+const ctxArtist = document.getElementById('artistChart');
 
-// Lecture et affichage du contenu de data.json
-fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-        console.error('Erreur lors de la lecture du fichier :', err);
-        return;
-    }
-    try {
-        const jsonData = JSON.parse(data);
-        console.log('Contenu de data.json :', jsonData);
-    } catch (parseError) {
-        console.error('Erreur lors de l\'analyse du JSON :', parseError);
-    }
-});
-
-<script>
-  const ctx = document.getElementById('myChart');
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-      datasets: [{
-        label: '# of Votes',
-        data: [12, 19, 3, 5, 2, 3],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
-        }
+new Chart(ctxArtist, {
+  type: 'bar',
+  data: {
+    labels: ['Ado', 'SCANDAL', 'Zarame', 'HepuPiano', 'Superfly', 'TRUE', '芽兎めう', 'Yorushika', 'NEKI', 'Tao Tsuchiya'],
+    datasets: [{
+      label: 'Nombre de morceaux',
+      data: [10, 7, 3, 2, 2, 2, 1, 1, 1, 1],
+      backgroundColor: 'rgba(54, 162, 235, 0.7)',
+      borderColor: 'rgba(54, 162, 235, 1)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: {
+        beginAtZero: true
       }
     }
-  });
-</script>
+  }
+});
+
+// Graphique des genres
+const ctxGenre = document.getElementById('genreChart');
+
+new Chart(ctxGenre, {
+  type: 'pie',
+  data: {
+    labels: ['animé', 'j-pop', 'j-rock', 'vocaloid', 'indie japonaise', 'variété française', 'chanson', 'Autres'],
+    datasets: [{
+      label: 'Genres musicaux',
+      data: [30, 25, 15, 10, 7, 5, 3, 5],
+      backgroundColor: [
+        '#FF6384', '#36A2EB', '#FFCE56', '#BA68C8',
+        '#4DB6AC', '#FFD54F', '#81C784', '#B0BEC5'
+      ]
+    }]
+  }
+});
