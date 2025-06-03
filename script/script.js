@@ -1,123 +1,149 @@
-fetch('data/data.json')
-  .then(res => res.json())
-  .then(data => {
-    const artistCount = {};
-    const genreCount = {};
-    const albumCount = {};
-    const trackLabels = [];
-    const trackDetails = [];
-
-    data.forEach(entry => {
-      // Artistes
-      entry.artists.forEach(artist => {
-        artistCount[artist.name] = (artistCount[artist.name] || 0) + 1;
-
-        if (artist.genres) {
-          artist.genres.forEach(genre => {
-            genreCount[genre] = (genreCount[genre] || 0) + 1;
-          });
-        }
-      });
-
-      // Albums
-      const albumName = entry.album?.name || "Inconnu";
-      albumCount[albumName] = (albumCount[albumName] || 0) + 1;
-
-      // Morceaux
-      trackLabels.push(entry.title);
-      trackDetails.push(entry); // Stocke l'objet complet pour la modale
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("data/data.json")
+    .then((res) => res.json())
+    .then((data) => {
+      const tracks = extractTracks(data);
+      const albums = extractAlbums(data);
+      generateArtistChart(tracks);
+      generateGenreChart(tracks);
+      populateSongsTable(tracks);
+      displayAlbums(albums);
     });
 
-    // Charts
-    createBarChart("topArtistsChart", artistCount, "Top artistes", 8);
-    createPieChart("genresChart", genreCount, "Genres", 6);
-    createBarChart("albumsChart", albumCount, "Top albums", 8);
-
-    createTrackChart("tracksChart", trackLabels, trackDetails);
+  document.getElementById("searchInput").addEventListener("input", function () {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll("#songsTable tbody tr");
+    rows.forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
   });
+});
 
-function createBarChart(id, dataObj, label, limit) {
-  const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]).slice(0, limit);
-  new Chart(document.getElementById(id), {
-    type: 'bar',
+function extractTracks(data) {
+  return data.map(item => {
+    const track = item;
+    const album = track.album;
+    const artistNames = track.artists.map(a => a.name).join(", ");
+    const genres = track.artists.flatMap(a => a.genres || []);
+    return {
+      titre: track.name,
+      artiste: artistNames,
+      album: album.name,
+      genres: genres,
+      popularity: track.popularity || 0
+    };
+  });
+}
+
+function extractAlbums(data) {
+  const albumMap = new Map();
+  data.forEach(track => {
+    const album = track.album;
+    if (!albumMap.has(album.id)) {
+      albumMap.set(album.id, {
+        nom: album.name,
+        artiste: album.artists.map(a => a.name).join(", "),
+        nbTitres: album.total_tracks,
+        note: album.popularity || 0,
+        date: album.release_date,
+        image: album.images?.[1]?.url || ""
+      });
+    }
+  });
+  return [...albumMap.values()];
+}
+
+function generateArtistChart(tracks) {
+  const counts = {};
+  tracks.forEach(track => {
+    track.artiste.split(", ").forEach(name => {
+      counts[name] = (counts[name] || 0) + 1;
+    });
+  });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const ctx = document.getElementById("artistChart").getContext("2d");
+
+  new Chart(ctx, {
+    type: "bar",
     data: {
-      labels: sorted.map(e => e[0]),
+      labels: sorted.map(x => x[0]),
       datasets: [{
-        label: label,
-        data: sorted.map(e => e[1]),
-        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        label: "Nombre de morceaux",
+        data: sorted.map(x => x[1]),
+        backgroundColor: "#007bff"
       }]
     },
     options: {
       indexAxis: 'y',
-      responsive: true,
-      scales: { x: { beginAtZero: true } }
+      responsive: true
     }
   });
 }
 
-function createPieChart(id, dataObj, label, limit) {
-  const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]).slice(0, limit);
-  new Chart(document.getElementById(id), {
-    type: 'pie',
-    data: {
-      labels: sorted.map(e => e[0]),
-      datasets: [{
-        label: label,
-        data: sorted.map(e => e[1]),
-        backgroundColor: [
-          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-        ]
-      }]
-    }
+function generateGenreChart(tracks) {
+  const genreCounts = {};
+  tracks.forEach(track => {
+    track.genres.forEach(genre => {
+      genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+    });
   });
-}
 
-function createTrackChart(id, labels, details) {
-  const ctx = document.getElementById(id);
-  const chart = new Chart(ctx, {
-    type: 'bar',
+  const labels = Object.keys(genreCounts);
+  const data = Object.values(genreCounts);
+  const colors = labels.map(() => `hsl(${Math.random() * 360}, 70%, 60%)`);
+
+  const ctx = document.getElementById("genreChart").getContext("2d");
+  new Chart(ctx, {
+    type: "pie",
     data: {
       labels: labels,
       datasets: [{
-        label: 'Morceaux',
-        data: Array(labels.length).fill(1),
-        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+        data: data,
+        backgroundColor: colors
       }]
     },
     options: {
-      indexAxis: 'y',
-      onClick: (e, elements) => {
-        if (elements.length > 0) {
-          const i = elements[0].index;
-          showModal(details[i]);
-        }
-      },
+      responsive: true,
       plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: { beginAtZero: true, display: false }
+        legend: {
+          position: 'bottom'
+        }
       }
     }
   });
 }
 
-function showModal(track) {
-  const modalLabel = document.getElementById('trackModalLabel');
-  const details = document.getElementById('trackDetails');
-  modalLabel.textContent = track.title;
+function populateSongsTable(tracks) {
+  const tbody = document.querySelector("#songsTable tbody");
+  tracks.forEach(track => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${track.titre}</td>
+      <td>${track.artiste}</td>
+      <td>${track.album}</td>
+      <td><button class="btn btn-primary btn-sm">🎧 Spotify</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-  let artistList = track.artists.map(a => a.name).join(", ");
-  let genres = track.artists.flatMap(a => a.genres || []).join(", ");
-  let album = track.album?.name || "Inconnu";
-
-  details.innerHTML = `
-    <p><strong>Artiste(s) :</strong> ${artistList}</p>
-    <p><strong>Album :</strong> ${album}</p>
-    <p><strong>Genres :</strong> ${genres}</p>
-  `;
-
-  const modal = new bootstrap.Modal(document.getElementById('trackModal'));
-  modal.show();
+function displayAlbums(albums) {
+  const container = document.getElementById("albumsContainer");
+  albums.forEach(album => {
+    const col = document.createElement("div");
+    col.className = "col-md-3 mb-4";
+    col.innerHTML = `
+      <div class="card h-100">
+        <img src="${album.image}" class="card-img-top" alt="${album.nom}">
+        <div class="card-body">
+          <h6 class="card-title">${album.nom}</h6>
+          <p class="card-text"><small>${album.artiste}</small><br>
+          ${album.date}</p>
+          <span class="badge bg-primary">${album.nbTitres} titres</span>
+          <span class="badge bg-success">${album.note}/100</span>
+        </div>
+      </div>
+    `;
+    container.appendChild(col);
+  });
 }
