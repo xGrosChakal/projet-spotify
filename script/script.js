@@ -1,114 +1,123 @@
-fetch('data/data.json') // Charge le fichier JSON local
-  .then(response => response.json())
+fetch('data/data.json')
+  .then(res => res.json())
   .then(data => {
-    // === Traitement des données ===
     const artistCount = {};
     const genreCount = {};
+    const albumCount = {};
+    const trackLabels = [];
+    const trackDetails = [];
 
     data.forEach(entry => {
-      // Compter les artistes (à partir des artistes du morceau)
-      if (entry.artists) {
-        entry.artists.forEach(artist => {
-          const name = artist.name;
-          artistCount[name] = (artistCount[name] || 0) + 1;
+      // Artistes
+      entry.artists.forEach(artist => {
+        artistCount[artist.name] = (artistCount[artist.name] || 0) + 1;
 
-          // Compter les genres de chaque artiste
-          if (artist.genres) {
-            artist.genres.forEach(genre => {
-              genreCount[genre] = (genreCount[genre] || 0) + 1;
-            });
-          }
-        });
-      }
-    });
-
-    // === Création du graphique des artistes ===
-    const sortedArtists = Object.entries(artistCount).sort((a, b) => b[1] - a[1]);
-    const artistLabels = sortedArtists.map(entry => entry[0]);
-    const artistData = sortedArtists.map(entry => entry[1]);
-
-    const ctxArtist = document.getElementById('artistChart').getContext('2d');
-    new Chart(ctxArtist, {
-      type: 'bar',
-      data: {
-        labels: artistLabels,
-        datasets: [{
-          label: 'Nombre de morceaux',
-          data: artistData,
-          backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        scales: {
-          x: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
-
-      // === Création du graphique des albums ===
-      const albumCount = {};
-
-      data.forEach(entry => {
-        const albumName = entry.album?.name || 'Inconnu';
-        albumCount[albumName] = (albumCount[albumName] || 0) + 1;
-      });
-  
-      const sortedAlbums = Object.entries(albumCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-      const albumLabels = sortedAlbums.map(entry => entry[0]);
-      const albumData = sortedAlbums.map(entry => entry[1]);
-  
-      const ctxAlbum = document.getElementById('albumChart').getContext('2d');
-      new Chart(ctxAlbum, {
-        type: 'bar',
-        data: {
-          labels: albumLabels,
-          datasets: [{
-            label: 'Nombre de morceaux par album',
-            data: albumData,
-            backgroundColor: 'rgba(255, 206, 86, 0.6)',
-            borderColor: 'rgba(255, 206, 86, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          scales: {
-            x: {
-              beginAtZero: true
-            }
-          }
+        if (artist.genres) {
+          artist.genres.forEach(genre => {
+            genreCount[genre] = (genreCount[genre] || 0) + 1;
+          });
         }
       });
-  
 
-    // === Création du graphique des genres ===
-    const sortedGenres = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
-    const genreLabels = sortedGenres.map(entry => entry[0]);
-    const genreData = sortedGenres.map(entry => entry[1]);
+      // Albums
+      const albumName = entry.album?.name || "Inconnu";
+      albumCount[albumName] = (albumCount[albumName] || 0) + 1;
 
-    const ctxGenre = document.getElementById('genreChart').getContext('2d');
-    new Chart(ctxGenre, {
-      type: 'pie',
-      data: {
-        labels: genreLabels,
-        datasets: [{
-          label: 'Genres musicaux',
-          data: genreData,
-          backgroundColor: [
-            '#FF6384', '#36A2EB', '#FFCE56', '#BA68C8',
-            '#4DB6AC', '#FFD54F', '#81C784', '#B0BEC5'
-          ]
-        }]
-      }
+      // Morceaux
+      trackLabels.push(entry.title);
+      trackDetails.push(entry); // Stocke l'objet complet pour la modale
     });
-  })
-  .catch(error => {
-    console.error("Erreur de chargement ou de traitement du fichier JSON :", error);
+
+    // Charts
+    createBarChart("topArtistsChart", artistCount, "Top artistes", 8);
+    createPieChart("genresChart", genreCount, "Genres", 6);
+    createBarChart("albumsChart", albumCount, "Top albums", 8);
+
+    createTrackChart("tracksChart", trackLabels, trackDetails);
   });
 
+function createBarChart(id, dataObj, label, limit) {
+  const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]).slice(0, limit);
+  new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        label: label,
+        data: sorted.map(e => e[1]),
+        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+}
 
+function createPieChart(id, dataObj, label, limit) {
+  const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]).slice(0, limit);
+  new Chart(document.getElementById(id), {
+    type: 'pie',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        label: label,
+        data: sorted.map(e => e[1]),
+        backgroundColor: [
+          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+        ]
+      }]
+    }
+  });
+}
+
+function createTrackChart(id, labels, details) {
+  const ctx = document.getElementById(id);
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Morceaux',
+        data: Array(labels.length).fill(1),
+        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      onClick: (e, elements) => {
+        if (elements.length > 0) {
+          const i = elements[0].index;
+          showModal(details[i]);
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { beginAtZero: true, display: false }
+      }
+    }
+  });
+}
+
+function showModal(track) {
+  const modalLabel = document.getElementById('trackModalLabel');
+  const details = document.getElementById('trackDetails');
+  modalLabel.textContent = track.title;
+
+  let artistList = track.artists.map(a => a.name).join(", ");
+  let genres = track.artists.flatMap(a => a.genres || []).join(", ");
+  let album = track.album?.name || "Inconnu";
+
+  details.innerHTML = `
+    <p><strong>Artiste(s) :</strong> ${artistList}</p>
+    <p><strong>Album :</strong> ${album}</p>
+    <p><strong>Genres :</strong> ${genres}</p>
+  `;
+
+  const modal = new bootstrap.Modal(document.getElementById('trackModal'));
+  modal.show();
+}
