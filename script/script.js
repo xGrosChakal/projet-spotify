@@ -21,16 +21,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function extractTracks(data) {
   return data.map(item => {
-    const track = item;
-    const album = track.album;
-    const artistNames = track.artists.map(a => a.name).join(", ");
-    const genres = track.artists.flatMap(a => a.genres || []);
+    const album = item.album;
+    const artists = item.artists;
     return {
-      titre: track.name,
-      artiste: artistNames,
+      titre: item.name,
+      artiste: artists.map(a => a.name).join(", "),
       album: album.name,
-      genres: genres,
-      popularity: track.popularity || 0
+      genres: artists.flatMap(a => a.genres || []),
+      popularity: item.popularity || 0,
+      preview_url: item.preview_url,
+      duration_ms: item.duration_ms,
+      spotify_url: item.external_urls?.spotify,
+      image: album.images?.[0]?.url || ""
     };
   });
 }
@@ -115,16 +117,55 @@ function generateGenreChart(tracks) {
 
 function populateSongsTable(tracks) {
   const tbody = document.querySelector("#songsTable tbody");
-  tracks.forEach(track => {
+  tbody.innerHTML = "";
+  tracks.forEach((track, index) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${track.titre}</td>
       <td>${track.artiste}</td>
       <td>${track.album}</td>
-      <td><button class="btn btn-primary btn-sm">🎧 Spotify</button></td>
+      <td><button class="btn btn-primary btn-sm" data-index="${index}">🎧 Spotify</button></td>
     `;
+    tr.querySelector("button").addEventListener("click", () => showTrackModal(track));
     tbody.appendChild(tr);
   });
+}
+
+function showTrackModal(track) {
+  const modalTitle = document.getElementById("trackModalTitle");
+  const modalBody = document.getElementById("trackModalBody");
+
+  const preview = track.preview_url
+    ? `<audio class="w-100 mb-3" controls src="${track.preview_url}"></audio>`
+    : `<div class="mb-3 text-muted">Aucun extrait disponible</div>`;
+
+  const duration = Math.floor((track.duration_ms || 0) / 60000) + ":" +
+    String(Math.floor(((track.duration_ms || 0) % 60000) / 1000)).padStart(2, "0");
+
+  const genresHTML = (track.genres?.length ? track.genres : ["inconnu"]).map(g =>
+    `<span class="badge bg-secondary me-1">${g}</span>`
+  ).join("");
+
+  modalTitle.innerText = track.titre;
+  modalBody.innerHTML = `
+    <div class="row">
+      <div class="col-md-4">
+        <img src="${track.image}" class="img-fluid mb-3" alt="${track.album}">
+        <p class="mb-1"><strong>Album :</strong><br>${track.album}</p>
+        <p><strong>Popularité :</strong> <span class="badge bg-success">${track.popularity}/100</span></p>
+      </div>
+      <div class="col-md-8">
+        ${preview}
+        <p><strong>Durée :</strong> ${duration}</p>
+        <p><strong>Artiste(s) :</strong><br>${track.artiste}</p>
+        <p><strong>Genres :</strong><br>${genresHTML}</p>
+        <a class="btn btn-success" href="${track.spotify_url}" target="_blank">Ouvrir dans Spotify</a>
+      </div>
+    </div>
+  `;
+
+  const modal = new bootstrap.Modal(document.getElementById("trackModal"));
+  modal.show();
 }
 
 function displayAlbums(albums) {
